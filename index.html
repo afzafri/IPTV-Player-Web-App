@@ -93,12 +93,25 @@
             const billedMsgElement = document.getElementById("billedMsg");
             const searchInput = document.getElementById("searchInput");
 
+            // Load search input from local storage
+            const savedPlaylistURL = localStorage.getItem("m3uPlaylistURL");
+            if (savedPlaylistURL) {
+                m3uURLInput.value = savedPlaylistURL;
+                // Automatically load the saved playlist
+                setTimeout(function () {
+                    loadM3UButton.click();
+                }, 500);
+            }
+
             // Define an array to store all playlist items
             let playlistItems = [];
             let playlistVideoSources = [];
 
             loadM3UButton.addEventListener("click", () => {
                 const m3uURL = m3uURLInput.value;
+                // Save search input to local storage
+                localStorage.setItem("m3uPlaylistURL", m3uURL);
+
                 // Load and parse the M3U file from the user-provided URL
                 fetch(m3uURL)
                     .then(response => response.text())
