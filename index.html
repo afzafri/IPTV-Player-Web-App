@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Streaming App</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        /* Custom CSS to adjust layout */
+        #playlist {
+            background-color: #f8f9fa; /* Background color for the playlist */
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+        }
+
+        .input-group-btn {
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-go {
+            margin-left: 10px;
+        }
+
+        .tv-logo {
+            width: 100px;
+        }
+
+        /* Apply subtle glow effect on hover */
+        .channel:hover {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        /* Change cursor to pointer on hover */
+        .channel:hover {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2" id="playlist">
+                <!-- Playlist items will be added here -->
+            </div>
+            <div class="col-md-10">
+                <div class="input-group mb-3 mt-3">
+                    <input type="text" id="m3uURL" class="form-control" placeholder="Enter M3U URL">
+                    <div class="input-group-btn">
+                        <button id="loadM3U" class="btn btn-primary btn-go">Go</button>
+                    </div>
+                </div>
+                <video id="videoPlayer" controls></video>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const videoPlayer = document.getElementById("videoPlayer");
+            const playlist = document.getElementById("playlist");
+            const loadM3UButton = document.getElementById("loadM3U");
+            const m3uURLInput = document.getElementById("m3uURL");
+
+            loadM3UButton.addEventListener("click", () => {
+                const m3uURL = m3uURLInput.value;
+
+                // Clear the existing playlist
+                playlist.innerHTML = '';
+
+                // Load and parse the M3U file from the user-provided URL
+                fetch(m3uURL)
+                    .then(response => response.text())
+                    .then(data => {
+                        videoPlayer.innerHTML = ''; // Clear the video player
+
+                        const lines = data.split('\n');
+                        let tvgName = '';
+                        let tvgLogo = '';
+
+                        for (let i = 0; i < lines.length; i++) {
+                            const line = lines[i].trim();
+
+                            // Check if it's an EXTINF line with tvg-name and tvg-logo
+                            if (line.startsWith("#EXTINF:")) {
+                                const tvgNameMatch = line.match(/tvg-name="([^"]+)"/);
+                                if (tvgNameMatch) {
+                                    tvgName = tvgNameMatch[1];
+                                } else {
+                                    // Extract the last string after the last comma as tvg-name
+                                    var lastCommaIndex = line.lastIndexOf(",");
+                                    if (lastCommaIndex !== -1) {
+                                        tvgName = line.substring(lastCommaIndex + 1).trim();
+                                    } else {
+                                        tvgName = `Stream ${i + 1}`;
+                                    }   
+                                }
+
+                                const tvgLogoMatch = line.match(/tvg-logo="([^"]+)"/);
+                                if (tvgLogoMatch) {
+                                    tvgLogo = tvgLogoMatch[1];
+                                }
+                            }
+
+                            // Check if the line is not empty and not a comment
+                            if (line.length > 0 && !line.startsWith("#")) {
+                                const playlistItem = document.createElement("div");
+                                playlistItem.className = "channel d-flex flex-column p-3";
+                                playlistItem.textContent = tvgName;
+
+                                if (tvgLogo) {
+                                    const logoImage = document.createElement("img");
+                                    logoImage.src = tvgLogo;
+                                    logoImage.className = "tv-logo"; // Add the class "tv-logo"
+                                    playlistItem.appendChild(logoImage);
+                                }
+
+                                playlistItem.addEventListener("click", () => {
+                                    // Initialize hls.js
+                                    hls = new Hls();
+                                    hls.loadSource(line);
+                                    hls.attachMedia(videoPlayer);
+                                    hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                                        videoPlayer.play();
+                                    });
+
+                                    // Scroll to the video player
+                                    videoPlayer.scrollIntoView({ behavior: 'smooth' });
+                                });
+
+                                playlist.appendChild(playlistItem);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error loading the M3U file:", error);
+                    });
+            });
+        });
+
+
+    </script>
+</body>
+</html>
