@@ -3,7 +3,6 @@
 <head>
     <title>Streaming App</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         /* Custom CSS to adjust layout */
         #playlist {
@@ -73,7 +72,7 @@
                         <button id="loadM3U" class="btn btn-primary btn-go">Go</button>
                     </div>
                 </div>
-                <video id="videoPlayer" controls></video>
+                <video id="videoPlayer" controls autoplay muted></video>
             </div>
         </div>
     </div>
@@ -84,6 +83,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous">
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.0/shaka-player.compiled.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const videoPlayer = document.getElementById("videoPlayer");
@@ -118,49 +118,73 @@
                     .then(data => {
                         videoPlayer.innerHTML = ''; // Clear the video player
 
-                        const lines = data.split('\n');
+                        data = trimLineBreak(data);
+                        const blocks = data.split('\n\n');
                         let tvgName = '';
                         let tvgLogo = '';
                         let billedMsg = '';
 
-                        for (let i = 0; i < lines.length; i++) {
-                            const line = lines[i].trim();
+                        for (let i = 0; i < blocks.length; i++) {
+                            var items = [];
+                            var lines = blocks[i].split('\n');
 
-                            // Check for the #EXTM3U line with billed-msg
-                            if (line.startsWith("#EXTM3U")) {
-                                const billedMsgMatch = line.match(/billed-msg="([^"]+)"/);
-                                if (billedMsgMatch) {
-                                    billedMsg = billedMsgMatch[1];
+                            items[i] = { 'key': '', 'tvgName': '', 'tvgLogo': '', 'source': '' };
+                            for (let j = 0; j < lines.length; j++) {
+                                const line = lines[j].trim();
+                                
+                                // Check for the #EXTM3U line with billed-msg
+                                if (line.startsWith("#EXTM3U")) {
+                                    const billedMsgMatch = line.match(/billed-msg="([^"]+)"/);
+                                    if (billedMsgMatch) {
+                                        billedMsg = billedMsgMatch[1];
+                                    }
                                 }
-                            }
 
-                            // Check if it's an EXTINF line with tvg-name and tvg-logo
-                            if (line.startsWith("#EXTINF:")) {
-                                const tvgNameMatch = line.match(/tvg-name="([^"]+)"/);
-                                if (tvgNameMatch) {
-                                    tvgName = tvgNameMatch[1];
-                                } else {
-                                    // Extract the last string after the last comma as tvg-name
-                                    var lastCommaIndex = line.lastIndexOf(",");
-                                    if (lastCommaIndex !== -1) {
-                                        tvgName = line.substring(lastCommaIndex + 1).trim();
+                                // Check for license key
+                                if (line.startsWith("#KODIPROP:inputstream.adaptive.license_key=")) {
+                                    var keyInfo = extractKey(line);
+
+                                    if(keyInfo != null) {
+                                        items[i]['key'] = keyInfo;
+                                    }
+                                }
+
+                                // Check if it's an EXTINF line with tvg-name and tvg-logo
+                                if (line.startsWith("#EXTINF:")) {
+                                    const tvgNameMatch = line.match(/tvg-name="([^"]+)"/);
+                                    if (tvgNameMatch) {
+                                        tvgName = tvgNameMatch[1];
                                     } else {
-                                        tvgName = `Stream ${i + 1}`;
-                                    }   
+                                        // Extract the last string after the last comma as tvg-name
+                                        var lastCommaIndex = line.lastIndexOf(",");
+                                        if (lastCommaIndex !== -1) {
+                                            tvgName = line.substring(lastCommaIndex + 1).trim();
+                                        } else {
+                                            tvgName = `Stream ${j + 1}`;
+                                        }   
+                                    }
+
+                                    const tvgLogoMatch = line.match(/tvg-logo="([^"]+)"/);
+                                    if (tvgLogoMatch) {
+                                        tvgLogo = tvgLogoMatch[1];
+                                    }
+
+                                    items[i]['tvgName'] = tvgName;
+                                    items[i]['tvgLogo'] = convertToHttps(tvgLogo);
                                 }
 
-                                const tvgLogoMatch = line.match(/tvg-logo="([^"]+)"/);
-                                if (tvgLogoMatch) {
-                                    tvgLogo = tvgLogoMatch[1];
+                                // Check if the line is not empty and not a comment
+                                if (line.length > 0 && !line.startsWith("#")) {
+                                    items[i]['source'] = convertToHttps(line);
                                 }
-
-                                // Store playlist item information
-                                playlistItems.push({ tvgName, tvgLogo });
                             }
 
-                            // Check if the line is not empty and not a comment
-                            if (line.length > 0 && !line.startsWith("#")) {
-                                playlistVideoSources.push({ line });
+                            if(items.length > 0) {
+                                items = reorderIndexes(items);
+
+                                if(items[0].source != null && items[0].source != '') {
+                                    playlistItems.push(items);
+                                }
                             }
                         }
 
@@ -191,7 +215,7 @@
 
                 // Filter playlist items based on search input
                 const filteredItems = playlistItems.filter(item => {
-                return item.tvgName.toLowerCase().includes(searchText);
+                return item[0].tvgName.toLowerCase().includes(searchText);
                 });
 
                 // Render the filtered playlist
@@ -207,23 +231,30 @@
                 items.forEach((item, index) => {
                     const playlistItem = document.createElement("div");
                     playlistItem.className = "channel d-flex flex-column p-3";
-                    playlistItem.textContent = item.tvgName;
+                    playlistItem.textContent = item[0].tvgName;
 
-                    if (item.tvgLogo) {
+                    if (item[0].tvgLogo) {
                         const logoImage = document.createElement("img");
-                        logoImage.src = item.tvgLogo;
+                        logoImage.src = item[0].tvgLogo;
                         logoImage.className = "tv-logo";
                         playlistItem.appendChild(logoImage);
                     }
 
                     playlistItem.addEventListener("click", () => {
-                        // Initialize hls.js
-                        hls = new Hls();
-                        hls.loadSource(playlistVideoSources[index].line);
-                        hls.attachMedia(videoPlayer);
-                        hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                            videoPlayer.play();
-                        });
+                        // Init Shaka Player
+                        player = new shaka.Player(videoPlayer);
+
+                        if(item[0].key.key_id != '' && item[0].key.key != '') {
+                            player.configure({
+                                drm: {
+                                    clearKeys: {
+                                        [item[0].key.key_id]: item[0].key.key
+                                    }
+                                }
+                            });
+                        }
+
+                        player.load(item[0].source);
 
                         // Scroll to the video player
                         videoPlayer.scrollIntoView({ behavior: 'smooth' });
@@ -234,6 +265,56 @@
             }
         });
 
+        function trimLineBreak(text) {
+            // Replace multiple line breaks with a single line break
+            return text.replace(/[\r\n]{2,}/g, '\n\n');
+        }
+
+        function reorderIndexes(items) {
+            let rearrangedItems = [];
+
+            items.forEach(item => {
+                if (item !== undefined) {
+                    rearrangedItems.push(item);
+                }
+            });
+
+            return rearrangedItems;
+        }
+
+        function base64ToHex(base64) {
+            if (base64.length > 0) {
+                const binary = atob(base64);
+                let hex = '';
+                for (let i = 0; i < binary.length; i++) {
+                    let char = binary.charCodeAt(i).toString(16);
+                    hex += (char.length === 1 ? '0' : '') + char;
+                }
+                return hex;
+            }
+            return base64;
+        }
+
+        function convertToHttps(url) {
+            return url.replace(/^http:/, 'https:');
+        }
+
+        function extractKey(line) {
+            // Regular expression to extract the values of 'k' (KEY) and 'kid' (ID)
+            const regex = /"k":"([^"]+)","kid":"([^"]+)"/;
+
+            // Extracting 'k' (KEY) and 'kid' (ID) using the regex
+            const match = line.match(regex);
+
+            if (match) {
+                const KEY = base64ToHex(match[1]); // Value of 'k' (KEY)
+                const ID = base64ToHex(match[2]); // Value of 'kid' (ID)
+
+                return {'key_id': ID, 'key': KEY};
+            } else {
+                return null;
+            }
+        }
 
     </script>
 </body>
