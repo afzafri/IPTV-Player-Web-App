@@ -87,6 +87,7 @@
     <script>
         // Define an array to store all playlist items
         let playlistItems = [];
+        let player = null;
 
         document.addEventListener("DOMContentLoaded", function () {
             const videoPlayer = document.getElementById("videoPlayer");
@@ -181,7 +182,6 @@
 
                             if(items.length > 0) {
                                 items = reorderIndexes(items);
-                                
                                 if(items[0].source != null && items[0].source != '') {
                                     playlistItems.push(items);
                                 }
@@ -237,11 +237,16 @@
                         playlistItem.appendChild(logoImage);
                     }
 
-                    playlistItem.addEventListener("click", () => {
+                    playlistItem.addEventListener("click", async () => {
+                        // If a player instance exists, destroy it before creating a new one
+                        if (player !== null) {
+                            await player.destroy();
+                        }
+
                         // Init Shaka Player
                         player = new shaka.Player(videoPlayer);
 
-                        if(item[0].key.key_id != '' && item[0].key.key != '') {
+                        if (item[0].key.key_id !== '' && item[0].key.key !== '') {
                             player.configure({
                                 drm: {
                                     clearKeys: {
@@ -251,7 +256,7 @@
                             });
                         }
 
-                        player.load(item[0].source);
+                        await player.load(item[0].source);
 
                         // Scroll to the video player
                         videoPlayer.scrollIntoView({ behavior: 'smooth' });
