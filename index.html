@@ -85,6 +85,9 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.0/shaka-player.compiled.js"></script>
     <script>
+        // Define an array to store all playlist items
+        let playlistItems = [];
+
         document.addEventListener("DOMContentLoaded", function () {
             const videoPlayer = document.getElementById("videoPlayer");
             const playlist = document.getElementById("playlist");
@@ -103,10 +106,6 @@
                 }, 500);
             }
 
-            // Define an array to store all playlist items
-            let playlistItems = [];
-            let playlistVideoSources = [];
-
             loadM3UButton.addEventListener("click", () => {
                 const m3uURL = m3uURLInput.value;
                 // Save search input to local storage
@@ -117,6 +116,7 @@
                     .then(response => response.text())
                     .then(data => {
                         videoPlayer.innerHTML = ''; // Clear the video player
+                        clearPlaylist(); // clear channel list
 
                         data = trimLineBreak(data);
                         const blocks = data.split('\n\n');
@@ -219,15 +219,12 @@
                 });
 
                 // Render the filtered playlist
+                clearPlaylist(false);
                 renderPlaylist(filteredItems);
             });
 
             // Function to render the playlist
             function renderPlaylist(items) {
-                // Clear the existing playlist items
-                const playlistItemsElem = playlist.querySelectorAll('.channel');
-                playlistItemsElem.forEach(item => item.remove());
-
                 items.forEach((item, index) => {
                     const playlistItem = document.createElement("div");
                     playlistItem.className = "channel d-flex flex-column p-3";
@@ -264,6 +261,16 @@
                 });
             }
         });
+
+        function clearPlaylist(clearItems = true) {
+            // Clear the existing playlist items
+            if(clearItems) {
+                playlistItems = [];
+            }
+            
+            const playlistItemsElem = playlist.querySelectorAll('.channel');
+            playlistItemsElem.forEach(item => item.remove());
+        }
 
         function trimLineBreak(text) {
             // Replace multiple line breaks with a single line break
