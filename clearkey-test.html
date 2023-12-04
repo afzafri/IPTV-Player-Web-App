@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Encrypted Stream Player (Clear Key)</title>
+    <!-- Include Shaka Player library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.0/shaka-player.compiled.js"></script>
+</head>
+
+<body>
+    <video id="player" controls autoplay></video>
+
+    <script>
+        init();
+        async function init() {
+            const manifestURL = convertToHttps('');
+            const keyId = base64ToHex(''); // Replace with your actual Key ID
+            const keyValue = base64ToHex(''); // Replace with your actual Key Value
+
+            const video = document.getElementById('player');
+            const player = new shaka.Player(video);
+
+            player.configure({
+                drm: {
+                    clearKeys: {
+                        [keyId]: keyValue
+                    }
+                }
+            });
+
+            // Try to load the stream with asynchronous
+            try {
+                await player.load(manifestURL);
+                // This runs if the asynchronous load is successful.
+                console.log('The video has now been loaded!');
+            } catch (error) {
+                console.error('Error loading stream', error);
+            }
+        }
+
+        function base64ToHex(base64) {
+            const binary = atob(base64);
+            let hex = '';
+            for (let i = 0; i < binary.length; i++) {
+                let char = binary.charCodeAt(i).toString(16);
+                hex += (char.length === 1 ? '0' : '') + char;
+            }
+            return hex;
+        }
+
+        function convertToHttps(url) {
+            return url.replace(/^http:/, 'https:');
+        }
+    </script>
+</body>
+
+</html>
