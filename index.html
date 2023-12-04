@@ -97,6 +97,13 @@
             const billedMsgElement = document.getElementById("billedMsg");
             const searchInput = document.getElementById("searchInput");
 
+            //  Get playlist url from url if any
+            var urlParams = new URLSearchParams(window.location.search);
+            var playlistParam = urlParams.get('playlist');
+            if (playlistParam != null) {
+                localStorage.setItem("m3uPlaylistURL", playlistParam);
+            }
+
             // Load search input from local storage
             const savedPlaylistURL = localStorage.getItem("m3uPlaylistURL");
             if (savedPlaylistURL) {
