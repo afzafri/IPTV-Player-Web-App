@@ -181,7 +181,7 @@
 
                             if(items.length > 0) {
                                 items = reorderIndexes(items);
-
+                                
                                 if(items[0].source != null && items[0].source != '') {
                                     playlistItems.push(items);
                                 }
@@ -307,18 +307,20 @@
         }
 
         function extractKey(line) {
-            // Regular expression to extract the values of 'k' (KEY) and 'kid' (ID)
-            const regex = /"k":"([^"]+)","kid":"([^"]+)"/;
+            const prefix = '#KODIPROP:inputstream.adaptive.license_key=';
+            const extractedValue = line.substring(line.indexOf(prefix) + prefix.length);
 
-            // Extracting 'k' (KEY) and 'kid' (ID) using the regex
-            const match = line.match(regex);
+            try {
+                var json = JSON.parse(extractedValue);
+                if (json && json.keys.length > 0) {
+                    const KEY = base64ToHex(json.keys[0].k); // Value of 'k' (KEY)
+                    const ID = base64ToHex(json.keys[0].kid); // Value of 'kid' (ID)
 
-            if (match) {
-                const KEY = base64ToHex(match[1]); // Value of 'k' (KEY)
-                const ID = base64ToHex(match[2]); // Value of 'kid' (ID)
-
-                return {'key_id': ID, 'key': KEY};
-            } else {
+                    return {'key_id': ID, 'key': KEY};
+                } else {
+                    return null;
+                }
+            } catch (error) {
                 return null;
             }
         }
