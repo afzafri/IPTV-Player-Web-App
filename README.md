@@ -59,7 +59,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Acknowledgments
 
-- [HLS.js](https://github.com/video-dev/hls.js) for enabling HLS video streaming.
+- [Shaka Player](https://github.com/shaka-project/shaka-player) for enabling video streaming.
 - [Bootstrap](https://getbootstrap.com/) for styling and layout.
 
 ## Contributing
