@@ -11,6 +11,12 @@ Demo: https://afzafri.github.io/IPTV-Player-Web-App
 - Play channels in a user-friendly video player.
 - Your M3U playlists URL are automatically saved to your browser local storage and auto load the next time you visit the page.
 
+### Issues
+
+- Only able to parse M3U file contents that are formatted with a line-break between each channels
+- Need a better way to read M3U file
+- Will not work on iOS due to missing DRM support on iOS 
+
 ## Getting Started
 
 Follow these instructions to get the project up and running on your local machine.
