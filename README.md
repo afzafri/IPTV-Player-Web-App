@@ -15,7 +15,8 @@ Demo: https://afzafri.github.io/IPTV-Player-Web-App
 
 - Only able to parse M3U file contents that are formatted with a line-break between each channels
 - Need a better way to read M3U file
-- Will not work on iOS due to missing DRM support on iOS 
+- Will not work on iOS due to missing DRM support on iOS
+- If the source URL has CORS restrictions, this web app won’t be able to fetch the data due to client-side limitations.
 
 ## Getting Started
 
