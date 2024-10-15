@@ -66,6 +66,7 @@
                     <input type="text" id="m3uURL" class="form-control" placeholder="Enter M3U URL">
                     <div class="input-group-btn">
                         <button id="loadM3U" class="btn btn-primary btn-go">Go</button>
+                        <button id="corsProxyBtn" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#corsProxyModal">CORS Proxy</button>
                     </div>
                 </div>
                 <video id="videoPlayer" controls autoplay muted></video>
@@ -77,6 +78,29 @@
         </div>
     </div>
     <div id="billedMsg" class="billed-msg d-none"></div>
+
+    <!-- CORS Proxy Modal -->
+    <div class="modal fade" id="corsProxyModal" tabindex="-1" aria-labelledby="corsProxyModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="corsProxyModalLabel">Use CORS Proxy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Do you want to use a CORS Proxy?</p>
+                    <div class="form-group">
+                        <label for="corsProxyURL">CORS Proxy URL:</label>
+                        <input type="text" id="corsProxyURL" class="form-control" placeholder="Enter CORS Proxy URL">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="useCorsProxy">Use Proxy</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -96,6 +120,19 @@
             const m3uURLInput = document.getElementById("m3uURL");
             const billedMsgElement = document.getElementById("billedMsg");
             const searchInput = document.getElementById("searchInput");
+            const useCorsProxyBtn = document.getElementById('useCorsProxy');
+            const corsProxyURLInput = document.getElementById('corsProxyURL');
+            const corsProxyModal = new bootstrap.Modal(document.getElementById('corsProxyModal'));
+
+            var corsProxyURL = localStorage.getItem("corsProxyURL");
+            if (corsProxyURL) {
+                corsProxyURLInput.value = corsProxyURL;
+            }
+            useCorsProxyBtn.addEventListener('click', function() {
+                const corsProxyURLSave = corsProxyURLInput.value.trim();
+                localStorage.setItem("corsProxyURL", corsProxyURLSave);
+                corsProxyModal.hide();
+            });
 
             //  Get playlist url from url if any
             var urlParams = new URLSearchParams(window.location.search);
@@ -115,8 +152,13 @@
             }
 
             loadM3UButton.addEventListener("click", () => {
-                const m3uURL = m3uURLInput.value;
+                var m3uURL = m3uURLInput.value;
                 localStorage.setItem("m3uPlaylistURL", m3uURL);
+
+                corsProxyURL = corsProxyURLInput.value.trim();
+                if (corsProxyURL) {
+                    m3uURL = corsProxyURL + m3uURL;
+                }
 
                 // Load and parse the M3U file from the user-provided URL
                 fetch(m3uURL)
@@ -205,7 +247,7 @@
                                     player.configure({
                                         drm: {
                                             servers: {
-                                                'org.w3.clearkey': item.key.license_key
+                                                'org.w3.clearkey': appendProxy(item.key.license_key)
                                             }
                                         }
                                     });
@@ -230,7 +272,7 @@
                             }
 
                             console.log('Loading source:', item.source);
-                            await player.load(item.source);
+                            await player.load(appendProxy(item.source), null, 'application/x-mpegurl');
                             console.log('Source loaded successfully');
 
                             videoPlayer.scrollIntoView({ behavior: 'smooth' });
@@ -375,6 +417,15 @@
                     }
                 }
                 return null;
+            }
+
+            function appendProxy(url) {
+                corsProxyURL = corsProxyURLInput.value.trim()
+                if (corsProxyURL) {
+                    return corsProxyURL + url;
+                }
+
+                return url;
             }
         });
 
