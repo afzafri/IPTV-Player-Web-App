@@ -61,11 +61,7 @@
 <body>
     <div class="container-fluid">
         <div class="row d-flex justify-content-center">
-            <div class="col-md-2 d-none" id="playlist">
-                 <input type="text" id="searchInput" class="form-control search-bar" placeholder="Search Channel">
-                <!-- Playlist items will be added here -->
-            </div>
-            <div class="col-md-10">
+            <div class="col-md-10 order-md-2">
                 <div class="input-group mb-3 mt-3">
                     <input type="text" id="m3uURL" class="form-control" placeholder="Enter M3U URL">
                     <div class="input-group-btn">
@@ -74,6 +70,10 @@
                 </div>
                 <video id="videoPlayer" controls autoplay muted></video>
             </div>
+            <div class="col-md-2 d-none order-md-1" id="playlist">
+                <input type="text" id="searchInput" class="form-control search-bar" placeholder="Search Channel">
+               <!-- Playlist items will be added here -->
+           </div>
         </div>
     </div>
     <div id="billedMsg" class="billed-msg d-none"></div>
