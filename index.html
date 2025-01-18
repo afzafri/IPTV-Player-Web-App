@@ -68,10 +68,11 @@
                         <button id="loadM3U" class="btn btn-primary btn-go">Go</button>
                     </div>
                 </div>
-                <video id="videoPlayer" controls autoplay muted></video>
+                <video id="videoPlayer" controls autoplay muted class="d-none"></video>
             </div>
-            <div class="col-md-2 d-none order-md-1" id="playlist">
+            <div class="col-md-2 order-md-1" id="playlist">
                 <input type="text" id="searchInput" class="form-control search-bar" placeholder="Search Channel">
+                <div class="d-flex align-items-center text-secondary mt-4" id="channel-placeholder">No channel found</div>
                <!-- Playlist items will be added here -->
            </div>
         </div>
@@ -96,6 +97,7 @@
             const m3uURLInput = document.getElementById("m3uURL");
             const billedMsgElement = document.getElementById("billedMsg");
             const searchInput = document.getElementById("searchInput");
+            const channelPlaceholder = document.getElementById("channel-placeholder");
 
             //  Get playlist url from url if any
             var urlParams = new URLSearchParams(window.location.search);
@@ -132,9 +134,9 @@
                         renderPlaylist(playlistItems);
 
                         if (document.getElementsByClassName('channel').length > 0) {
-                            playlist.classList.remove("d-none");
+                            channelPlaceholder.classList.add("d-none");
                         } else {
-                            playlist.classList.add("d-none");
+                            channelPlaceholder.classList.remove("d-none");
                         }
 
                         if (parsedPlaylist.billedMsg) {
@@ -234,9 +236,11 @@
                             console.log('Source loaded successfully');
 
                             videoPlayer.scrollIntoView({ behavior: 'smooth' });
+                            videoPlayer.classList.remove("d-none");
                         } catch (error) {
                             console.error('Error in renderPlaylist:', error);
                             onPlayerError(error);
+                            videoPlayer.classList.add("d-none");
                         }
                     });
 
